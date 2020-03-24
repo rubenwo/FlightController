@@ -1,8 +1,7 @@
 #include <Arduino.h>
-
 #include "controller.h"
 
-Controller controller({0, 0, 0, 0, 0});
+Controller controller({0, 0, 0, 0});
 
 void setup()
 {
@@ -11,5 +10,5 @@ void setup()
 
 void loop()
 {
-  delay(10000);
+  delay(1000);
 }
