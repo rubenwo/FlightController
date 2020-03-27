@@ -17,7 +17,7 @@ class Controller
 {
 private:
     std::array<Motor *, 4> motors;
-    MPU6050* mpu6050;
+    MPU6050 *mpu6050;
 
 public:
     Controller(controller_config cfg);
