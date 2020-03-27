@@ -1,6 +1,7 @@
 #include <Arduino.h>
 //#include "controller.h"
 //Controller controller({0, 0, 0, 0});
+#include <thread>
 
 #include <WiFi.h>
 #include <MQTT.h>
@@ -13,6 +14,7 @@ WiFiClient net;
 MQTTClient client;
 
 Motor *motor;
+Motor *motor2;
 const uint LED = 2;
 
 void connect()
@@ -55,12 +57,26 @@ void messageReceived(String &topic, String &payload)
   digitalWrite(LED, LOW);
 }
 
+void initM(Motor *m)
+{
+  m->init();
+}
+
 void setup()
 {
-  pinMode(2, OUTPUT);
-  motor = new Motor(15);
-  
   Serial.begin(115200);
+
+  pinMode(2, OUTPUT);
+
+  motor = new Motor(15);
+  motor2 = new Motor(13);
+
+  std::thread initT(initM, motor);
+  std::thread initTT(initM, motor2);
+
+  initT.join();
+  initTT.join();
+
   WiFi.begin(ssid, pass);
 
   // Note: Local domain names (e.g. "Computer.local" on OSX) are not supported by Arduino.

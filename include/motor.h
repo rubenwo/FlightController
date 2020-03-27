@@ -15,6 +15,7 @@ public:
     Motor(const uint pin);
     ~Motor();
 
+    void init();
     void setThrottle(int amt);
     int getThrottle();
     void increaseThrottle(int amt);

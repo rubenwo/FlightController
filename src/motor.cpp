@@ -1,22 +1,29 @@
 #include "motor.h"
-
+#include <Arduino.h>
 Motor::Motor() {}
 
 Motor::Motor(const uint pin)
 {
     this->pin = pin;
     this->ESC.attach(this->pin, 1000, 2000);
-
-    digitalWrite(2, HIGH);
-    ESC.write(180);
-    delay(5000);
-    ESC.write(0);
-    delay(5000);
-    digitalWrite(2, LOW);
 }
 
 Motor::~Motor()
 {
+}
+
+void Motor::init()
+{
+    digitalWrite(2, HIGH);
+    ESC.write(180);
+    Serial.println("Setting high for pin: " + this->pin);
+
+    delay(5000);
+    ESC.write(0);
+    Serial.println("Setting low for pin: " + this->pin);
+
+    delay(5000);
+    digitalWrite(2, LOW);
 }
 
 int Motor::getThrottle()
