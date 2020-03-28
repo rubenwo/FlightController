@@ -6,6 +6,7 @@
 #include <MPU6050_tockn.h>
 #include <Wire.h>
 
+#include "connection.h"
 #include "motor.h"
 
 struct controller_config
@@ -18,11 +19,13 @@ class Controller
 private:
     std::array<Motor *, 4> motors;
     MPU6050 *mpu6050;
+    Connection *connection;
+    long timer = 0;
 
 public:
     Controller(controller_config cfg);
     ~Controller();
-    
+
     void init();
-    void run();
+    void loop();
 };
