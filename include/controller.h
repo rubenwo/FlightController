@@ -22,6 +22,7 @@ private:
 public:
     Controller(controller_config cfg);
     ~Controller();
-
+    
+    void init();
     void run();
 };

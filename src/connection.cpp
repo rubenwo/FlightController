@@ -2,7 +2,8 @@
 
 Connection::Connection(connection_config &cfg)
 {
-    this->port = cfg.port;
+    port = cfg.port;
+    WiFi.begin(cfg.ssid.c_str(), cfg.pass.c_str());
 }
 
 Connection::~Connection() {}
