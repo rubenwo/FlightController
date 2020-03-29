@@ -63,7 +63,54 @@ void Controller::loop()
 {
 
     mpu6050->update();
+    current_state = {mpu6050->getAngleX(), mpu6050->getAngleY(), mpu6050->getAngleZ()};
+    if (desired_state.on)
+    {
+        if (desired_state.angleX > current_state.angleX)
+        {
+            motors[0]->increaseThrottle(18);
+            motors[1]->increaseThrottle(18);
+            motors[2]->decreaseThrottle(18);
+            motors[3]->decreaseThrottle(18);
+        }
+        if (desired_state.angleX < current_state.angleX)
+        {
+            motors[0]->decreaseThrottle(18);
+            motors[1]->decreaseThrottle(18);
+            motors[2]->increaseThrottle(18);
+            motors[3]->increaseThrottle(18);
+        }
 
+        if (desired_state.angleY > current_state.angleY)
+        {
+            motors[0]->increaseThrottle(18);
+            motors[1]->decreaseThrottle(18);
+            motors[2]->decreaseThrottle(18);
+            motors[3]->increaseThrottle(18);
+        }
+        if (desired_state.angleY < current_state.angleY)
+        {
+            motors[0]->decreaseThrottle(18);
+            motors[1]->increaseThrottle(18);
+            motors[2]->increaseThrottle(18);
+            motors[3]->decreaseThrottle(18);
+        }
+
+        if (desired_state.angleZ > current_state.angleZ)
+        {
+            motors[0]->decreaseThrottle(18);
+            motors[1]->increaseThrottle(18);
+            motors[2]->decreaseThrottle(18);
+            motors[3]->increaseThrottle(18);
+        }
+        if (desired_state.angleZ < current_state.angleZ)
+        {
+            motors[0]->increaseThrottle(18);
+            motors[1]->decreaseThrottle(18);
+            motors[2]->increaseThrottle(18);
+            motors[3]->decreaseThrottle(18);
+        }
+    }
     if (millis() - timer > 1000)
     {
 

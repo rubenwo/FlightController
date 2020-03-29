@@ -14,11 +14,21 @@ struct controller_config
     std::array<uint, 4> motor_pins;
 };
 
+struct state
+{
+    bool on;
+    float angleX;
+    float angleY;
+    float angleZ;
+};
+
 class Controller
 {
 private:
     std::array<Motor *, 4> motors;
     MPU6050 *mpu6050;
+    state current_state = {false, 0, 0, 0};
+    state desired_state = {false, 0, 0, 0};
     Connection *connection;
     long timer = 0;
 
