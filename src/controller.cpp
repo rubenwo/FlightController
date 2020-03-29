@@ -104,5 +104,7 @@ void Controller::loop()
         Serial.println(mpu6050->getAngleZ());
         Serial.println("=======================================================\n");
         timer = millis();
+
+        Serial.println(xPortGetCoreID());
     }
 }

@@ -39,7 +39,7 @@ Connection::Connection(connection_config cfg)
     Serial.println("\nconnected!");
 
     client.subscribe("/hello");
-  //  send();
+    //  send();
     recv();
 }
 
@@ -47,9 +47,17 @@ Connection::~Connection() {}
 
 void Connection::recv()
 {
+
     std::thread recvThread([this]() {
+        long timer = 0;
+
         for (;;)
         {
+            if (millis() - timer > 1000)
+            {
+                Serial.println(xPortGetCoreID());
+                timer = millis();
+            }
             client.loop();
             delay(10); // <- fixes some issues with WiFi stability
 
