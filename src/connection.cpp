@@ -1,85 +1,64 @@
 #include "connection.h"
-
 std::function<void(message m)> c;
 
 Connection::Connection(connection_config cfg)
 {
     port = cfg.port;
     WiFi.begin(cfg.ssid.c_str(), cfg.pass.c_str());
+    server = WiFiServer(cfg.port);
+    // Connect to Wi-Fi network with SSID and password
+    Serial.print("Setting AP (Access Point)…");
+    // Remove the password parameter, if you want the AP (Access Point) to be open
+    WiFi.softAP(cfg.ssid.c_str(), cfg.pass.c_str());
 
-    client.begin("broker.hivemq.com", net);
-    client.onMessage([](String &topic, String &payload) {
-        int speed = atoi(payload.c_str());
+    IPAddress IP = WiFi.softAPIP();
+    Serial.print("AP IP address: ");
+    Serial.println(IP);
 
-        c({speed});
-        Serial.println(payload);
-        digitalWrite(2, HIGH);
-        delay(100);
-        digitalWrite(2, LOW);
-        delay(100);
-        digitalWrite(2, HIGH);
-        delay(100);
-        digitalWrite(2, LOW);
-    });
-
-    Serial.print("checking wifi...");
-    while (WiFi.status() != WL_CONNECTED)
-    {
-        Serial.print(".");
-        delay(1000);
-    }
-
-    Serial.print("\nconnecting...");
-    while (!client.connect("test12345678"))
-    {
-        Serial.print(".");
-        delay(1000);
-    }
-
-    Serial.println("\nconnected!");
-
-    client.subscribe("/hello");
-    //  send();
+    server.begin();
     recv();
 }
 
 Connection::~Connection() {}
 
+message Connection::parse(uint8_t* data, size_t size)
+{
+    
+}
+
 void Connection::recv()
 {
 
     std::thread recvThread([this]() {
-        long timer = 0;
-
         for (;;)
         {
-            if (millis() - timer > 1000)
+
+            auto client = server.accept();
+
+            if (client)
             {
-                Serial.println(xPortGetCoreID());
-                timer = millis();
-            }
-            client.loop();
-            delay(10); // <- fixes some issues with WiFi stability
-
-            if (!client.connected())
-            {
-                Serial.print("checking wifi...");
-                while (WiFi.status() != WL_CONNECTED)
+                while (client.connected())
                 {
-                    Serial.print(".");
-                    delay(1000);
+
+                    uint8_t prefix[4];
+                    int bytes_read = 0;
+                    bytes_read += client.read(prefix, 4);
+                    if (bytes_read > 0)
+                    {
+                        int size = 0;
+                        size = (size << 8) + prefix[0];
+                        size = (size << 8) + prefix[1];
+                        size = (size << 8) + prefix[2];
+                        size = (size << 8) + prefix[3];
+
+                        uint8_t data[size];
+
+                        bytes_read += client.read(data, size);
+
+                        get_callback()(parse(data, size));
+                    }
                 }
-
-                Serial.print("\nconnecting...");
-                while (!client.connect("test12345678"))
-                {
-                    Serial.print(".");
-                    delay(1000);
-                }
-
-                Serial.println("\nconnected!");
-
-                client.subscribe("/hello");
+                client.stop();
             }
         }
     });
@@ -88,11 +67,15 @@ void Connection::recv()
 
 void Connection::send()
 {
-    client.publish("/hello", "Drone is online");
 }
 
 void Connection::set_callback(std::function<void(message m)> callback)
 {
-    //this->callback = callback;
+    this->callback = callback;
     c = callback;
+}
+
+std::function<void(message m)> Connection::get_callback()
+{
+    return callback;
 }

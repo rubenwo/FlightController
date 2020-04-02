@@ -47,8 +47,9 @@ void Controller::init()
     Serial.println("mpu6050 connected and calibrated");
 
     Serial.println("Initalizing connection...");
-    connection = new Connection({1337, "Exogenesis_2.4", "maanDag2018"});
+    connection = new Connection({1337, "ESP32-Access-Point", "123456789"});
     connection->set_callback([this](message m) {
+        Serial.println(m.speed);
         for (int i = 0; i < motors.size(); i++)
         {
             motors[i]->setThrottle(m.speed);
@@ -64,94 +65,52 @@ void Controller::loop()
 
     mpu6050->update();
     current_state = {mpu6050->getAngleX(), mpu6050->getAngleY(), mpu6050->getAngleZ()};
-    if (desired_state.on)
+    if (desired_state.on && millis() - timer > 250)
     {
         if (desired_state.angleX > current_state.angleX)
         {
-            motors[0]->increaseThrottle(18);
-            motors[1]->increaseThrottle(18);
-            motors[2]->decreaseThrottle(18);
-            motors[3]->decreaseThrottle(18);
+            motors[0]->increaseThrottle(1);
+            motors[1]->increaseThrottle(1);
+            motors[2]->decreaseThrottle(1);
+            motors[3]->decreaseThrottle(1);
         }
         if (desired_state.angleX < current_state.angleX)
         {
-            motors[0]->decreaseThrottle(18);
-            motors[1]->decreaseThrottle(18);
-            motors[2]->increaseThrottle(18);
-            motors[3]->increaseThrottle(18);
+            motors[0]->decreaseThrottle(1);
+            motors[1]->decreaseThrottle(1);
+            motors[2]->increaseThrottle(1);
+            motors[3]->increaseThrottle(1);
         }
 
         if (desired_state.angleY > current_state.angleY)
         {
-            motors[0]->increaseThrottle(18);
-            motors[1]->decreaseThrottle(18);
-            motors[2]->decreaseThrottle(18);
-            motors[3]->increaseThrottle(18);
+            motors[0]->increaseThrottle(1);
+            motors[1]->decreaseThrottle(1);
+            motors[2]->decreaseThrottle(1);
+            motors[3]->increaseThrottle(1);
         }
         if (desired_state.angleY < current_state.angleY)
         {
-            motors[0]->decreaseThrottle(18);
-            motors[1]->increaseThrottle(18);
-            motors[2]->increaseThrottle(18);
-            motors[3]->decreaseThrottle(18);
+            motors[0]->decreaseThrottle(1);
+            motors[1]->increaseThrottle(1);
+            motors[2]->increaseThrottle(1);
+            motors[3]->decreaseThrottle(1);
         }
 
         if (desired_state.angleZ > current_state.angleZ)
         {
-            motors[0]->decreaseThrottle(18);
-            motors[1]->increaseThrottle(18);
-            motors[2]->decreaseThrottle(18);
-            motors[3]->increaseThrottle(18);
+            motors[0]->decreaseThrottle(1);
+            motors[1]->increaseThrottle(1);
+            motors[2]->decreaseThrottle(1);
+            motors[3]->increaseThrottle(1);
         }
         if (desired_state.angleZ < current_state.angleZ)
         {
-            motors[0]->increaseThrottle(18);
-            motors[1]->decreaseThrottle(18);
-            motors[2]->increaseThrottle(18);
-            motors[3]->decreaseThrottle(18);
+            motors[0]->increaseThrottle(1);
+            motors[1]->decreaseThrottle(1);
+            motors[2]->increaseThrottle(1);
+            motors[3]->decreaseThrottle(1);
         }
-    }
-    if (millis() - timer > 1000)
-    {
-
-        Serial.println("=======================================================");
-        Serial.print("temp : ");
-        Serial.println(mpu6050->getTemp());
-        Serial.print("accX : ");
-        Serial.print(mpu6050->getAccX());
-        Serial.print("\taccY : ");
-        Serial.print(mpu6050->getAccY());
-        Serial.print("\taccZ : ");
-        Serial.println(mpu6050->getAccZ());
-
-        Serial.print("gyroX : ");
-        Serial.print(mpu6050->getGyroX());
-        Serial.print("\tgyroY : ");
-        Serial.print(mpu6050->getGyroY());
-        Serial.print("\tgyroZ : ");
-        Serial.println(mpu6050->getGyroZ());
-
-        Serial.print("accAngleX : ");
-        Serial.print(mpu6050->getAccAngleX());
-        Serial.print("\taccAngleY : ");
-        Serial.println(mpu6050->getAccAngleY());
-
-        Serial.print("gyroAngleX : ");
-        Serial.print(mpu6050->getGyroAngleX());
-        Serial.print("\tgyroAngleY : ");
-        Serial.print(mpu6050->getGyroAngleY());
-        Serial.print("\tgyroAngleZ : ");
-        Serial.println(mpu6050->getGyroAngleZ());
-
-        Serial.print("angleX : ");
-        Serial.print(mpu6050->getAngleX());
-        Serial.print("\tangleY : ");
-        Serial.print(mpu6050->getAngleY());
-        Serial.print("\tangleZ : ");
-        Serial.println(mpu6050->getAngleZ());
-        Serial.println("=======================================================\n");
         timer = millis();
-
-        Serial.println(xPortGetCoreID());
     }
 }
