@@ -5,8 +5,7 @@
 class Motor
 {
 private:
-    int currentThrottle;
-    uint pin;
+    volatile int currentThrottle;
     Servo ESC;
 
 public:

@@ -4,8 +4,7 @@ Motor::Motor() {}
 
 Motor::Motor(const uint pin)
 {
-    this->pin = pin;
-    ESC.attach(this->pin, 1000, 2000);
+    ESC.attach(pin, 1000, 2000);
 }
 
 Motor::~Motor()
@@ -14,9 +13,9 @@ Motor::~Motor()
 
 void Motor::init()
 {
-    ESC.write(180);
+    ESC.write(180); //Set new high
     delay(5000);
-    ESC.write(0);
+    ESC.write(0); //Set new low
     delay(5000);
 }
 

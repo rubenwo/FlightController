@@ -38,7 +38,11 @@ void Controller::init()
 
     Serial.println("All motors are armed!");
 
-    Serial.println("Connecting to mpu6050....");
+    Serial.println("Starting battery monitor...");
+    battery = new Battery(36);
+    Serial.println("Battery monitor is running");
+
+    Serial.println("Connecting to mpu6050...");
     mpu6050 = new MPU6050(Wire);
 
     Wire.begin(21, 22);
@@ -49,7 +53,25 @@ void Controller::init()
     Serial.println("Initalizing connection...");
     connection = new Connection({1337, "ESP32-Access-Point", "123456789"});
     connection->set_callback([this](message m) {
-        Serial.println(m.speed);
+        // Serial.println("===== Begin of message =====");
+        // Serial.print("speed: ");
+        // Serial.println(m.speed);
+        // Serial.print("angleX: ");
+        // Serial.println(m.angleX);
+        // Serial.print("angleY: ");
+        // Serial.println(m.angleY);
+        // Serial.print("angleZ: ");
+        // Serial.println(m.angleZ);
+        // Serial.println("===== End of message =====");
+
+        if (m.angleX != desired_state.angleX)
+            desired_state.angleX = m.angleX;
+        if (m.angleY != desired_state.angleY)
+            desired_state.angleY = m.angleY;
+        if (m.angleZ != desired_state.angleZ)
+            desired_state.angleZ = m.angleZ;
+        if (!desired_state.on)
+            desired_state.on = true;
         for (int i = 0; i < motors.size(); i++)
         {
             motors[i]->setThrottle(m.speed);
@@ -60,57 +82,45 @@ void Controller::init()
     digitalWrite(2, LOW);
 }
 
-void Controller::loop()
+void Controller::PID_Algo()
 {
 
-    mpu6050->update();
-    current_state = {mpu6050->getAngleX(), mpu6050->getAngleY(), mpu6050->getAngleZ()};
-    if (desired_state.on && millis() - timer > 250)
-    {
-        if (desired_state.angleX > current_state.angleX)
-        {
-            motors[0]->increaseThrottle(1);
-            motors[1]->increaseThrottle(1);
-            motors[2]->decreaseThrottle(1);
-            motors[3]->decreaseThrottle(1);
-        }
-        if (desired_state.angleX < current_state.angleX)
-        {
-            motors[0]->decreaseThrottle(1);
-            motors[1]->decreaseThrottle(1);
-            motors[2]->increaseThrottle(1);
-            motors[3]->increaseThrottle(1);
-        }
+    //Serial.print("Controller::PID_Algo() running in thread: ");
+    //Serial.println(xPortGetCoreID());
+    Serial.print("Battery level: ");
+    Serial.println(battery->get_percentage());
+    delay(500);
+}
 
-        if (desired_state.angleY > current_state.angleY)
-        {
-            motors[0]->increaseThrottle(1);
-            motors[1]->decreaseThrottle(1);
-            motors[2]->decreaseThrottle(1);
-            motors[3]->increaseThrottle(1);
-        }
-        if (desired_state.angleY < current_state.angleY)
-        {
-            motors[0]->decreaseThrottle(1);
-            motors[1]->increaseThrottle(1);
-            motors[2]->increaseThrottle(1);
-            motors[3]->decreaseThrottle(1);
-        }
+void Controller::run()
+{
+    xTaskCreatePinnedToCore(
+        [](void *c) {
+            Connection *conn = static_cast<Connection *>(c);
+            for (;;)
+            {
+                conn->loop();
+            }
+        },
+        "connection_thread",
+        51200,
+        static_cast<void *>(connection),
+        0,
+        &connection_task,
+        0);
 
-        if (desired_state.angleZ > current_state.angleZ)
-        {
-            motors[0]->decreaseThrottle(1);
-            motors[1]->increaseThrottle(1);
-            motors[2]->decreaseThrottle(1);
-            motors[3]->increaseThrottle(1);
-        }
-        if (desired_state.angleZ < current_state.angleZ)
-        {
-            motors[0]->increaseThrottle(1);
-            motors[1]->decreaseThrottle(1);
-            motors[2]->increaseThrottle(1);
-            motors[3]->decreaseThrottle(1);
-        }
-        timer = millis();
-    }
+    xTaskCreatePinnedToCore(
+        [](void *c) {
+            Controller *controller = static_cast<Controller *>(c);
+            for (;;)
+            {
+                controller->PID_Algo();
+            };
+        },
+        "controller_thread",
+        51200,
+        static_cast<void *>(this),
+        0,
+        &controller_task,
+        1);
 }

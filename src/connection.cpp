@@ -1,78 +1,89 @@
 #include "connection.h"
-std::function<void(message m)> c;
 
 Connection::Connection(connection_config cfg)
 {
-    port = cfg.port;
-    WiFi.begin(cfg.ssid.c_str(), cfg.pass.c_str());
-    server = WiFiServer(cfg.port);
+
     // Connect to Wi-Fi network with SSID and password
     Serial.print("Setting AP (Access Point)…");
     // Remove the password parameter, if you want the AP (Access Point) to be open
     WiFi.softAP(cfg.ssid.c_str(), cfg.pass.c_str());
 
+    port = cfg.port;
+    server = WiFiServer(cfg.port);
+
     IPAddress IP = WiFi.softAPIP();
     Serial.print("AP IP address: ");
     Serial.println(IP);
-
     server.begin();
-    recv();
 }
 
 Connection::~Connection() {}
 
-message Connection::parse(uint8_t* data, size_t size)
+void Connection::init()
 {
-    
 }
 
-void Connection::recv()
+int32_t bytes_to_int32(byte data[4])
 {
+    int n = 0;
+    n = (n << 8) + data[0];
+    n = (n << 8) + data[1];
+    n = (n << 8) + data[2];
+    n = (n << 8) + data[3];
 
-    std::thread recvThread([this]() {
-        for (;;)
+    return n;
+}
+
+float_t bytes_to_float(byte data[4])
+{
+    float n = 0;
+    n = (data[3] << 24) | (data[2] << 16) | (data[1] << 8) | data[0];
+    return n;
+}
+
+void Connection::loop()
+{
+    auto client = server.accept();
+
+    if (client)
+    {
+        Serial.println("New Client."); // print a message out in the serial port
+
+        while (client.connected())
         {
-
-            auto client = server.accept();
-
-            if (client)
+            if (client.available())
             {
-                while (client.connected())
+                int bytes_read = 0;
+                byte data[16];
+                bytes_read += client.readBytes(data, 16);
+                if (bytes_read > 0)
                 {
-
-                    uint8_t prefix[4];
-                    int bytes_read = 0;
-                    bytes_read += client.read(prefix, 4);
-                    if (bytes_read > 0)
-                    {
-                        int size = 0;
-                        size = (size << 8) + prefix[0];
-                        size = (size << 8) + prefix[1];
-                        size = (size << 8) + prefix[2];
-                        size = (size << 8) + prefix[3];
-
-                        uint8_t data[size];
-
-                        bytes_read += client.read(data, size);
-
-                        get_callback()(parse(data, size));
-                    }
+                    byte speed[4], angleX[4], angleY[4], angleZ[4];
+                    for (auto i = 0; i < 4; i++)
+                        speed[i] = data[i];
+                    for (auto i = 0; i < 4; i++)
+                        angleX[i] = data[i + 4];
+                    for (auto i = 0; i < 4; i++)
+                        angleY[i] = data[i + 8];
+                    for (auto i = 0; i < 4; i++)
+                        angleZ[i] = data[i + 12];
+                    callback(
+                        {bytes_to_int32(speed),
+                         static_cast<float>(bytes_to_int32(angleX)),
+                         static_cast<float>(bytes_to_int32(angleY)),
+                         static_cast<float>(bytes_to_int32(angleZ))});
                 }
-                client.stop();
             }
         }
-    });
-    recvThread.detach();
-}
-
-void Connection::send()
-{
+        client.stop();
+        Serial.println("Client disconnected.");
+    }
+    delay(10);
 }
 
 void Connection::set_callback(std::function<void(message m)> callback)
 {
     this->callback = callback;
-    c = callback;
 }
 
 std::function<void(message m)> Connection::get_callback()

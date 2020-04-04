@@ -2,8 +2,6 @@
 
 #include <Arduino.h>
 #include <WiFi.h>
-#include <MQTT.h>
-#include <thread>
 
 struct connection_config
 {
@@ -15,21 +13,18 @@ struct connection_config
 struct message
 {
     int speed;
+    float angleX;
+    float angleY;
+    float angleZ;
 };
 
 class Connection
 {
 private:
     uint port;
-    MQTTClient client;
     WiFiServer server;
 
     std::function<void(message m)> callback;
-
-    void recv();
-    void send();
-    void messageReceived(String &topic, String &payload);
-    message parse(uint8_t *data, size_t size);
 
 public:
     Connection(connection_config cfg);
@@ -37,4 +32,7 @@ public:
 
     void set_callback(std::function<void(message m)> callback);
     std::function<void(message m)> get_callback();
+
+    void init();
+    void loop();
 };
