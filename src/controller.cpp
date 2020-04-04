@@ -42,36 +42,16 @@ void Controller::init()
     battery = new Battery(36);
     Serial.println("Battery monitor is running");
 
-    Serial.println("Connecting to mpu6050...");
-    mpu6050 = new MPU6050(Wire);
-
-    Wire.begin(21, 22);
-    mpu6050->begin();
-    mpu6050->calcGyroOffsets(true);
-    Serial.println("mpu6050 connected and calibrated");
-
     Serial.println("Initalizing connection...");
     connection = new Connection({1337, "ESP32-Access-Point", "123456789"});
     connection->set_callback([this](message m) {
-        // Serial.println("===== Begin of message =====");
-        // Serial.print("speed: ");
-        // Serial.println(m.speed);
-        // Serial.print("angleX: ");
-        // Serial.println(m.angleX);
-        // Serial.print("angleY: ");
-        // Serial.println(m.angleY);
-        // Serial.print("angleZ: ");
-        // Serial.println(m.angleZ);
-        // Serial.println("===== End of message =====");
-
         if (m.angleX != desired_state.angleX)
             desired_state.angleX = m.angleX;
         if (m.angleY != desired_state.angleY)
             desired_state.angleY = m.angleY;
         if (m.angleZ != desired_state.angleZ)
             desired_state.angleZ = m.angleZ;
-        if (!desired_state.on)
-            desired_state.on = true;
+        desired_state.on = m.speed > 0;
         for (int i = 0; i < motors.size(); i++)
         {
             motors[i]->setThrottle(m.speed);
@@ -79,17 +59,43 @@ void Controller::init()
     });
     Serial.println("Drone is online!");
 
+    Serial.println("Connecting to mpu6050...");
+    mpu6050 = new MPU6050(Wire);
+
+    Wire.begin(21, 22);
+    mpu6050->begin();
+    mpu6050->calcGyroOffsets();
+    Serial.println("mpu6050 connected and calibrated");
+
     digitalWrite(2, LOW);
+}
+
+void Controller::loop()
+{
+    PID_Algo();
+    if (millis() - timer > 2500)
+    {
+        connection->send_info(
+            {static_cast<int>(current_state.angleX),
+             static_cast<int>(current_state.angleY),
+             static_cast<int>(current_state.angleZ),
+             static_cast<int>(mpu6050->getTemp()),
+             battery->get_percentage(),
+             motors[0]->getThrottle(),
+             motors[1]->getThrottle(),
+             motors[2]->getThrottle(),
+             motors[3]->getThrottle()});
+        timer = millis();
+    }
 }
 
 void Controller::PID_Algo()
 {
+    mpu6050->update();
 
-    //Serial.print("Controller::PID_Algo() running in thread: ");
-    //Serial.println(xPortGetCoreID());
-    Serial.print("Battery level: ");
-    Serial.println(battery->get_percentage());
-    delay(500);
+    current_state.angleX = mpu6050->getAngleX();
+    current_state.angleY = mpu6050->getAngleY();
+    current_state.angleZ = mpu6050->getAngleZ();
 }
 
 void Controller::run()
@@ -114,7 +120,7 @@ void Controller::run()
             Controller *controller = static_cast<Controller *>(c);
             for (;;)
             {
-                controller->PID_Algo();
+                controller->loop();
             };
         },
         "controller_thread",

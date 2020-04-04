@@ -48,7 +48,7 @@ void Connection::loop()
     if (client)
     {
         Serial.println("New Client."); // print a message out in the serial port
-
+        current_client = &client;
         while (client.connected())
         {
             if (client.available())
@@ -76,9 +76,65 @@ void Connection::loop()
             }
         }
         client.stop();
+        current_client = nullptr;
         Serial.println("Client disconnected.");
     }
     delay(10);
+}
+
+void Connection::send_info(info_message m)
+{
+    if (current_client == nullptr)
+        return;
+    byte data[36];
+
+    data[0] = (m.angleX >> 24) & 0xFF;
+    data[1] = (m.angleX >> 16) & 0xFF;
+    data[2] = (m.angleX >> 8) & 0xFF;
+    data[3] = (m.angleX) & 0xFF;
+
+    data[4] = (m.angleY >> 24) & 0xFF;
+    data[5] = (m.angleY >> 16) & 0xFF;
+    data[6] = (m.angleY >> 8) & 0xFF;
+    data[7] = (m.angleY) & 0xFF;
+
+    data[8] = (m.angleZ >> 24) & 0xFF;
+    data[9] = (m.angleZ >> 16) & 0xFF;
+    data[10] = (m.angleZ >> 8) & 0xFF;
+    data[11] = (m.angleZ) & 0xFF;
+
+    data[12] = (m.temperature >> 24) & 0xFF;
+    data[13] = (m.temperature >> 16) & 0xFF;
+    data[14] = (m.temperature >> 8) & 0xFF;
+    data[15] = (m.temperature) & 0xFF;
+
+    data[16] = (m.battery_level >> 24) & 0xFF;
+    data[17] = (m.battery_level >> 16) & 0xFF;
+    data[18] = (m.battery_level >> 8) & 0xFF;
+    data[19] = (m.battery_level) & 0xFF;
+
+    data[20] = (m.motor_0_speed >> 24) & 0xFF;
+    data[21] = (m.motor_0_speed >> 16) & 0xFF;
+    data[23] = (m.motor_0_speed >> 8) & 0xFF;
+    data[23] = (m.motor_0_speed) & 0xFF;
+
+    data[24] = (m.motor_1_speed >> 24) & 0xFF;
+    data[25] = (m.motor_1_speed >> 16) & 0xFF;
+    data[26] = (m.motor_1_speed >> 8) & 0xFF;
+    data[27] = (m.motor_1_speed) & 0xFF;
+
+    data[28] = (m.motor_2_speed >> 24) & 0xFF;
+    data[29] = (m.motor_2_speed >> 16) & 0xFF;
+    data[30] = (m.motor_2_speed >> 8) & 0xFF;
+    data[31] = (m.motor_2_speed) & 0xFF;
+
+    data[32] = (m.motor_3_speed >> 24) & 0xFF;
+    data[33] = (m.motor_3_speed >> 16) & 0xFF;
+    data[34] = (m.motor_3_speed >> 8) & 0xFF;
+    data[35] = (m.motor_3_speed) & 0xFF;
+
+    current_client->write(data, 36);
+    current_client->flush();
 }
 
 void Connection::set_callback(std::function<void(message m)> callback)

@@ -31,8 +31,8 @@ private:
     Connection *connection;
     Battery *battery;
 
-    volatile state current_state = {false, 0, 0, 0};
-    volatile state desired_state = {false, 0, 0, 0};
+    state current_state = {false, 0, 0, 0};
+    state desired_state = {false, 0, 0, 0};
     long timer = 0;
 
     TaskHandle_t connection_task;
@@ -45,5 +45,6 @@ public:
     void PID_Algo();
 
     void init();
+    void loop();
     void run();
 };
