@@ -35,11 +35,17 @@ void Motor::increaseThrottle(int amt)
     currentThrottle += amt;
     if (currentThrottle > 180)
         currentThrottle = 180;
+    if (currentThrottle < 0)
+        currentThrottle = 0;
+    ESC.write(currentThrottle);
 }
 
 void Motor::decreaseThrottle(int amt)
 {
     currentThrottle -= amt;
+    if (currentThrottle > 180)
+        currentThrottle = 180;
     if (currentThrottle < 0)
         currentThrottle = 0;
+    ESC.write(currentThrottle);
 }
