@@ -17,7 +17,7 @@ Controller::~Controller()
 {
 }
 
-float angle_x_error, angle_y_error;
+float angle_x_error = 0, angle_y_error = 0;
 
 void Controller::init()
 {
@@ -53,10 +53,14 @@ void Controller::init()
             desired_state.angleY = m.angleY;
         if (m.angleZ != desired_state.angleZ)
             desired_state.angleZ = m.angleZ;
-        desired_state.on = m.speed > 0;
-        for (int i = 0; i < motors.size(); i++)
+        desired_state.on = m.speed > 15;
+        desired_state.throttle = m.speed;
+        if (m.speed <= 12)
         {
-            motors[i]->setThrottle(m.speed);
+            for (int i = 0; i < motors.size(); i++)
+            {
+                motors[i]->setThrottle(m.speed);
+            }
         }
     });
     Serial.println("Drone is online!");
@@ -68,12 +72,16 @@ void Controller::init()
     mpu6050->begin();
     mpu6050->calcGyroOffsets();
 
-    angle_x_error = mpu6050->getAngleX();
-    angle_y_error = mpu6050->getAngleY();
-    if (angle_x_error < 0)
-        angle_x_error *= -1;
-    if (angle_y_error < 0)
-        angle_y_error *= -1;
+    float x_err = 0, y_err = 0;
+    for (int i = 0; i < 100; i++)
+    {
+        x_err += mpu6050->getAngleX();
+        y_err += mpu6050->getAngleY();
+        delay(10);
+    }
+
+    angle_x_error = (x_err / 100) * -1;
+    angle_y_error = (y_err / 100) * -1;
 
     Serial.println("mpu6050 connected and calibrated");
 
@@ -106,22 +114,21 @@ float total_angle_x;
 float total_angle_y;
 
 long elapsedTime, current_time, timePrev;
-int i;
-float rad_to_deg = 180 / 3.141592654;
 
-float PID, pwmLeft, pwmRight, error, previous_error;
+float PID, pwmLeft, pwmRight, error_x, error_y, previous_error_x, previous_error_y;
 float pid_p = 0;
 float pid_i = 0;
 float pid_d = 0;
 /////////////////PID CONSTANTS/////////////////
-double kp = 3.55;  //3.55
-double ki = 0.005; //0.003
-double kd = 2.05;  //2.05
+double kp = 1.0;
+double ki = 0.003;
+double kd = 1.0;
 ///////////////////////////////////////////////
 
 void Controller::PID_Algo()
 {
-
+    if (!desired_state.on)
+        return;
     timePrev = current_time;
     current_time = millis();
     elapsedTime = (current_time - timePrev) / 1000;
@@ -130,16 +137,20 @@ void Controller::PID_Algo()
 
     total_angle_x = mpu6050->getAngleX() + angle_x_error;
     total_angle_y = mpu6050->getAngleY() + angle_y_error;
+    current_state.angleX = total_angle_x;
+    current_state.angleY = total_angle_y;
 
-    error = total_angle_y - desired_state.angleY;
+    error_y = total_angle_y - desired_state.angleY;
+    error_x = total_angle_x - desired_state.angleX;
 
-    pid_p = kp * error;
-    if (error > -3 && error < 3)
+    pid_p = kp * error_y;
+    if (error_y > -3 && error_y < 3)
     {
-        pid_i = pid_i + (ki * error);
+        error_y = 0;
+        pid_i = pid_i + (ki * error_y);
     }
 
-    pid_d = kd * ((error - previous_error) / elapsedTime);
+    pid_d = kd * ((error_y - previous_error_y) / elapsedTime);
     PID = pid_p + pid_i + pid_d;
 
     if (PID < -1000)
@@ -151,13 +162,22 @@ void Controller::PID_Algo()
         PID = 1000;
     }
 
-    float corrected_pid = map(PID, -1000, 1000, -90, 90);
-
-    motors[0]->increaseThrottle(corrected_pid);
-    motors[1]->decreaseThrottle(corrected_pid);
-    motors[2]->decreaseThrottle(corrected_pid);
-    motors[3]->increaseThrottle(corrected_pid);
-    previous_error = error;
+    float corrected_pid = map(PID, -1000, 1000, -50, 50);
+    int throttle_left = desired_state.throttle + corrected_pid;
+    int throttle_right = desired_state.throttle - corrected_pid;
+    if (throttle_left > 180)
+        throttle_left = 180;
+    if (throttle_left < desired_state.throttle)
+        throttle_left = desired_state.throttle;
+    if (throttle_right > 180)
+        throttle_right = 180;
+    if (throttle_right < desired_state.throttle)
+        throttle_right = desired_state.throttle;
+    motors[0]->setThrottle(throttle_left);
+    motors[1]->setThrottle(throttle_right);
+    motors[2]->setThrottle(throttle_right);
+    motors[3]->setThrottle(throttle_left);
+    previous_error_y = error_y;
 
     if (millis() - algo_timer > 500)
     {

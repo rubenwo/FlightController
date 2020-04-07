@@ -18,6 +18,7 @@ struct controller_config
 struct state
 {
     bool on;
+    int throttle;
     float angleX;
     float angleY;
     float angleZ;
@@ -31,8 +32,8 @@ private:
     Connection *connection;
     Battery *battery;
 
-    state current_state = {false, 0, 0, 0};
-    state desired_state = {false, 0, 0, 0};
+    state current_state = {false, 0, 0, 0, 0};
+    state desired_state = {false, 0, 0, 0, 0};
     long timer = 0;
 
     TaskHandle_t connection_task;
