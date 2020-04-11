@@ -105,7 +105,7 @@ void Controller::loop()
              motors[3]->getThrottle()});
         timer = millis();
     }
-    delay(25);
+    delay(10);
 }
 
 long algo_timer = 0;
@@ -115,16 +115,23 @@ float total_angle_y;
 
 long elapsedTime, current_time, timePrev;
 
-float PID, pwmLeft, pwmRight, error_x, error_y, previous_error_x, previous_error_y;
-float pid_p = 0;
-float pid_i = 0;
-float pid_d = 0;
-/////////////////PID CONSTANTS/////////////////
-double kp = 1.0;
-double ki = 0.003;
-double kd = 1.0;
+float x_PID, y_PID, pwm_R_F, pwm_R_B, pwm_L_B, pwm_L_F, error_x, error_y, previous_error_x, previous_error_y;
+float x_pid_p = 0;
+float x_pid_i = 0;
+float x_pid_d = 0;
+float y_pid_p = 0;
+float y_pid_i = 0;
+float y_pid_d = 0;
+/////////////////X PID CONSTANTS/////////////////
+double x_kp = 0.5;
+double x_ki = 0;
+double x_kd = 1.0;
 ///////////////////////////////////////////////
-
+/////////////////Y PID CONSTANTS/////////////////
+double y_kp = 0.5;
+double y_ki = 0;
+double y_kd = 1.0;
+///////////////////////////////////////////////
 void Controller::PID_Algo()
 {
     if (!desired_state.on)
@@ -143,41 +150,94 @@ void Controller::PID_Algo()
     error_y = total_angle_y - desired_state.angleY;
     error_x = total_angle_x - desired_state.angleX;
 
-    pid_p = kp * error_y;
+    y_pid_p = y_kp * error_y;
+    x_pid_p = x_kp * error_x;
+
     if (error_y > -3 && error_y < 3)
     {
-        error_y = 0;
-        pid_i = pid_i + (ki * error_y);
+        y_pid_i = y_pid_i + (y_ki * error_y);
     }
 
-    pid_d = kd * ((error_y - previous_error_y) / elapsedTime);
-    PID = pid_p + pid_i + pid_d;
-
-    if (PID < -1000)
+    if (error_x > -3 && error_y < 3)
     {
-        PID = -1000;
-    }
-    if (PID > 1000)
-    {
-        PID = 1000;
+        x_pid_i = x_pid_i + (x_ki * error_x);
     }
 
-    float corrected_pid = map(PID, -1000, 1000, -50, 50);
-    int throttle_left = desired_state.throttle + corrected_pid;
-    int throttle_right = desired_state.throttle - corrected_pid;
-    if (throttle_left > 180)
-        throttle_left = 180;
-    if (throttle_left < desired_state.throttle)
-        throttle_left = desired_state.throttle;
-    if (throttle_right > 180)
-        throttle_right = 180;
-    if (throttle_right < desired_state.throttle)
-        throttle_right = desired_state.throttle;
-    motors[0]->setThrottle(throttle_left);
-    motors[1]->setThrottle(throttle_right);
-    motors[2]->setThrottle(throttle_right);
-    motors[3]->setThrottle(throttle_left);
+    y_pid_d = y_kd * ((error_y - previous_error_y) / elapsedTime);
+    x_pid_d = x_kd * ((error_x - previous_error_x) / elapsedTime);
+
+    y_PID = y_pid_p + y_pid_i + y_pid_d;
+    x_PID = x_pid_p + x_pid_i + x_pid_d;
+
+    if (y_PID < -400)
+    {
+        y_PID = -400;
+    }
+    if (y_PID > 400)
+    {
+        y_PID = 400;
+    }
+
+    if (x_PID < -400)
+    {
+        x_PID = -400;
+    }
+    if (x_PID > 400)
+    {
+        x_PID = 400;
+    }
+    int input = map(desired_state.throttle, 0, 100, 1000, 2000);
+    pwm_R_F = 115 + input - y_PID - x_PID;
+    pwm_R_B = 115 + input - y_PID + x_PID;
+    pwm_L_B = 115 + input + y_PID + x_PID;
+    pwm_L_F = 115 + input + y_PID - x_PID;
+
+    if (pwm_R_F < 1100)
+    {
+        pwm_R_F = 1100;
+    }
+    if (pwm_R_F > 2000)
+    {
+        pwm_R_F = 2000;
+    }
+
+    //Left front
+    if (pwm_L_F < 1100)
+    {
+        pwm_L_F = 1100;
+    }
+    if (pwm_L_F > 2000)
+    {
+        pwm_L_F = 2000;
+    }
+
+    //Right back
+    if (pwm_R_B < 1100)
+    {
+        pwm_R_B = 1100;
+    }
+    if (pwm_R_B > 2000)
+    {
+        pwm_R_B = 2000;
+    }
+
+    //Left back
+    if (pwm_L_B < 1100)
+    {
+        pwm_L_B = 1100;
+    }
+    if (pwm_L_B > 2000)
+    {
+        pwm_L_B = 2000;
+    }
+
+    motors[0]->setThrottle(map(pwm_L_F, 1000, 2000, 20, 100));
+    motors[1]->setThrottle(map(pwm_R_F, 1000, 2000, 20, 100));
+    motors[2]->setThrottle(map(pwm_R_B, 1000, 2000, 20, 100));
+    motors[3]->setThrottle(map(pwm_L_B, 1000, 2000, 20, 100));
+
     previous_error_y = error_y;
+    previous_error_x = error_x;
 
     if (millis() - algo_timer > 500)
     {
@@ -186,7 +246,6 @@ void Controller::PID_Algo()
         Serial.printf("Angle_X: %f\n", total_angle_x);
         Serial.printf("Angle_Y: %f\n", total_angle_y);
 
-        Serial.printf("corrected_pid=%f\n", corrected_pid);
         Serial.printf("Motor %d has a throttle of: %d\n", 0, motors[0]->getThrottle());
         Serial.printf("Motor %d has a throttle of: %d\n", 1, motors[1]->getThrottle());
         Serial.printf("Motor %d has a throttle of: %d\n", 2, motors[2]->getThrottle());
