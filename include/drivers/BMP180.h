@@ -6,11 +6,11 @@ class BMP180
 {
 private:
     float current_height;
+    int pressure_offset;
     Adafruit_BMP085 bmp;
 
 public:
     BMP180();
-    BMP180(uint8_t bus_num, uint8_t sda_pin, uint8_t scl_pin);
     ~BMP180();
 
     float get_height();

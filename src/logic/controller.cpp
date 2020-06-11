@@ -1,10 +1,10 @@
 #include "logic/controller.h"
 
-Controller::Controller(controller_config cfg) : pid(PID(3, 0.01, 1, 1, 0, 0))
+Controller::Controller(controller_config cfg) : pid(PID(1, 0, 0, 1, 0, 0))
 {
     pinMode(2, OUTPUT);
     Serial.begin(460800);
-
+    
     for (int i = 0; i < cfg.motor_pins.size(); i++)
     {
         motors[i].reset(new Motor(cfg.motor_pins[i]));
@@ -74,13 +74,14 @@ void Controller::loop()
     Serial.println(height);
 
     auto controller_input = rc->get_input();
+    Serial.println(controller_input.ch1);
     auto throttle = map(controller_input.ch1, 1000, 2000, 0, 600);
-    if (throttle <= 1)
-        return;
+    // if (throttle <= 1)
+    //     return;
     auto desired_roll = map(controller_input.ch2, 1000, 2000, -20, 20);
     auto desired_pitch = map(controller_input.ch3, 1000, 2000, -20, 20);
 
-    auto pid_output = pid.output(desired_pitch, desired_roll, x, y);
+    auto pid_output = pid.output(0, 0, x, y);
 
     Serial.print("PID X: ");
     Serial.println(pid_output.output_x);
@@ -92,4 +93,9 @@ void Controller::loop()
     motors[1]->setThrottle(baseline + throttle - pid_output.output_y - pid_output.output_y); // Front right
     motors[2]->setThrottle(baseline + throttle - pid_output.output_y + pid_output.output_y); // Back right
     motors[3]->setThrottle(baseline + throttle + pid_output.output_y + pid_output.output_y); // Back left
+
+    for (const auto &m : motors)
+    {
+        Serial.println(m->getThrottle());
+    }
 }

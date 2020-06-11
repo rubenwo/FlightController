@@ -6,6 +6,7 @@ class Motor
 {
 private:
     Servo ESC;
+    int current_speed;
 
 public:
     Motor() {}
@@ -25,6 +26,12 @@ public:
     }
     void setThrottle(int microseconds)
     {
-        ESC.write(microseconds);
+        current_speed = microseconds;
+        ESC.write(current_speed);
+    }
+
+    int getThrottle()
+    {
+        return current_speed;
     }
 };
