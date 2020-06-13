@@ -4,6 +4,7 @@
 #include <array>
 #include <memory>
 #include <thread>
+#include <string>
 #include <MPU6050_tockn.h>
 
 #include "drivers/motor.h"
@@ -11,6 +12,7 @@
 #include "drivers/BMP180.h"
 #include "conn/rc.h"
 #include "logic/pid.h"
+#include "conn/logger.h"
 
 struct controller_config
 {
@@ -25,6 +27,7 @@ private:
     std::unique_ptr<Battery> battery;
     std::unique_ptr<BMP180> bmp180;
     std::unique_ptr<RC> rc;
+    std::unique_ptr<Logger> logger;
     PID pid;
 
 public:
