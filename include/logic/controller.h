@@ -28,7 +28,8 @@ private:
     std::unique_ptr<BMP180> bmp180;
     std::unique_ptr<RC> rc;
     std::unique_ptr<Logger> logger;
-    PID pid;
+    PID pid_x;
+    PID pid_y;
 
 public:
     Controller(controller_config cfg);

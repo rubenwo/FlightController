@@ -1,6 +1,6 @@
 #include "logic/controller.h"
 
-Controller::Controller(controller_config cfg) : pid(PID(1, 0, 0, 1, 0, 0))
+Controller::Controller(controller_config cfg) : pid_x(PID(1, 0, 0)), pid_y(PID(1, 0, 0))
 {
     pinMode(2, OUTPUT);
     Serial.begin(460800);
@@ -74,31 +74,25 @@ void Controller::loop()
     auto x = mpu6050->getAngleX();
     auto y = mpu6050->getAngleY();
     //auto height = bmp180->get_height();
-    //logger->stage_msg("Angle X: " + Logger::to_string(x));
-    //logger->stage_msg("Angle Y: " + Logger::to_string(y));
-    //   logger->stage_msg("Altitude: " + Logger::to_string(height));
 
     auto controller_input = rc->get_input();
-    //  logger->stage_msg("Controller input: " + Logger::to_string(controller_input.ch1));
     auto throttle = map(controller_input.ch1, 1000, 2000, 0, 600);
     // if (throttle <= 1)
     //     return;
     auto desired_roll = map(controller_input.ch2, 1000, 2000, -20, 20);
     auto desired_pitch = map(controller_input.ch3, 1000, 2000, -20, 20);
 
-    auto pid_output = pid.output(0, 0, x, y);
-    // logger->stage_msg("PID X: " + Logger::to_string(pid_output.output_x));
-    // logger->stage_msg("PID Y: " + Logger::to_string(pid_output.output_y));
+    auto pid_output_x = pid_x.calc_pid(0, x);
+    auto pid_output_y = pid_y.calc_pid(0, y);
 
+    throttle = 100;
     int baseline = 115;
-    motors[0]->setThrottle(baseline + throttle + pid_output.output_y - pid_output.output_y); // Front left
-    motors[1]->setThrottle(baseline + throttle - pid_output.output_y - pid_output.output_y); // Front right
-    motors[2]->setThrottle(baseline + throttle - pid_output.output_y + pid_output.output_y); // Back right
-    motors[3]->setThrottle(baseline + throttle + pid_output.output_y + pid_output.output_y); // Back left
+    motors[0]->setThrottle(baseline + throttle + pid_output_y - pid_output_x); // Front left
+    motors[1]->setThrottle(baseline + throttle - pid_output_y - pid_output_x); // Front right
+    motors[2]->setThrottle(baseline + throttle - pid_output_y + pid_output_x); // Back right
+    motors[3]->setThrottle(baseline + throttle + pid_output_y + pid_output_x); // Back left
 
-    // for (const auto &m : motors)
-    // {
-    //     logger->stage_msg("Motor: " + Logger::to_string(m->getThrottle()));
-    // }
-    //logger->push();
+    for (int i = 0; i < motors.size(); i++)
+        logger->stage_msg("Motor " + Logger::to_string(i) + ": " + Logger::to_string(motors[i]->getThrottle()));
+    logger->push();
 }
