@@ -9,9 +9,11 @@ private:
     int pressure_offset;
     Adafruit_BMP085 bmp;
 
+    long timer = 0;
+
 public:
     BMP180();
     ~BMP180();
 
-    float get_height();
+    float get_altitude();
 };

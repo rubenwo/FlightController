@@ -23,7 +23,7 @@ public:
     float calc_pid(float desired = 0, float actual = 0)
     {
         error = desired - actual;
-        current_time = micros();
+        current_time = millis();
         delta_time = current_time - previous_time;
         previous_time = current_time;
 

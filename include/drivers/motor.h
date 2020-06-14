@@ -27,6 +27,10 @@ public:
     void setThrottle(int microseconds)
     {
         current_speed = microseconds;
+        if (current_speed < 1000)
+            current_speed = 1000;
+        if (current_speed > 2000)
+            current_speed = 2000;
         ESC.write(current_speed);
     }
 

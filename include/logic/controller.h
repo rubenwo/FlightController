@@ -30,6 +30,7 @@ private:
     std::unique_ptr<Logger> logger;
     PID pid_x;
     PID pid_y;
+    PID pid_z;
 
 public:
     Controller(controller_config cfg);
