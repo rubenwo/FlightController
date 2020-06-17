@@ -5,6 +5,7 @@ Controller::Controller(controller_config cfg) : pid_x(PID(2, 0, 0)), pid_y(PID(2
     pinMode(2, OUTPUT);
     Serial.begin(460800);
     logger.reset(new Logger(Serial));
+    bt.reset(new BT_Conn("Flight Controller V1"));
 
     for (int i = 0; i < cfg.motor_pins.size(); i++)
     {
@@ -15,8 +16,6 @@ Controller::Controller(controller_config cfg) : pid_x(PID(2, 0, 0)), pid_y(PID(2
 Controller::~Controller()
 {
 }
-long timer = 0;
-long counter = 0;
 void Controller::init()
 {
     digitalWrite(2, HIGH);
@@ -56,8 +55,12 @@ void Controller::init()
     logger->stage_msg("Starting battery monitor...", true, true);
     battery.reset(new Battery(36));
     logger->stage_msg("Battery monitor is running", true, true);
+
+    // logger->stage_msg("Starting BLE service...", true, true);
+    // bt->init();
+    // logger->stage_msg("BLE service is running", true, true);
+
     digitalWrite(2, LOW);
-    timer = millis();
 }
 
 void Controller::loop()
@@ -126,6 +129,6 @@ void Controller::loop()
     //     " Motor 1: " + Logger::to_string(motors[1]->getThrottle()) +
     //     " Motor 2: " + Logger::to_string(motors[2]->getThrottle()) +
     //     " Motor 3: " + Logger::to_string(motors[3]->getThrottle()));
-    logger->stage_msg("State: " + Logger::to_string(state), true, true);
+    // //logger->stage_msg("State: " + Logger::to_string(state), true, true);
     // logger->push();
 }

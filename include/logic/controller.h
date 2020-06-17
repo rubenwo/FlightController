@@ -14,6 +14,7 @@
 #include "logic/pid.h"
 #include "conn/logger.h"
 #include "logic/FSM.h"
+#include "conn/bluetooth.h"
 
 enum mode
 {
@@ -54,6 +55,8 @@ private:
     std::unique_ptr<BMP180> bmp180;
     std::unique_ptr<RC> rc;
     std::unique_ptr<Logger> logger;
+    std::unique_ptr<BT_Conn> bt;
+
     PID pid_x;
     PID pid_y;
     PID pid_z;
