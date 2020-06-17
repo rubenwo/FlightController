@@ -62,37 +62,70 @@ void Controller::init()
 
 void Controller::loop()
 {
-
     mpu6050->update();
-    auto x = mpu6050->getAngleX();
-    auto y = mpu6050->getAngleY();
-    // auto z = mpu6050->getAngleZ(); Yaw is not working on the mpu6050, random init values.
-    auto altitude = bmp180->get_altitude();
+    // auto z = mpu6050->getAngleZ(); Yaw is not working on the mpu6050, random init values. DMP is required for Z-axis.
 
     auto controller_input = rc->get_input();
-    auto throttle = map(controller_input.ch1, 1000, 2000, 0, 600);
-    // if (throttle <= 1)
-    //     return;
-    auto desired_roll = map(controller_input.ch2, 1000, 2000, -20, 20);
-    auto desired_pitch = map(controller_input.ch3, 1000, 2000, -20, 20);
-    //auto desired_yaw = map(controller_input.ch4, 1000, 2000, -20, 20);
 
-    auto pid_output_x = pid_x.calc_pid(0, x);
-    auto pid_output_y = pid_y.calc_pid(0, y);
-    //auto pid_output_z = pid_z.calc_pid(0, z);
+    // Transition to S_FLYING state.
+    if (controller_input.ch3 <= 1010 && controller_input.ch0 >= 1990 && state == S_IDLE)
+    {
+        pid_x.reset_values();
+        pid_y.reset_values();
+        pid_z.reset_values();
+        base_speed = 1100; // Set base_speed to 1100 to keep motors rotating while the drone is in flying state.
+        state = S_FLYING;
+    }
+    /*if (controller_input.ch4 == 0 && state == S_FLYING)
+    {
+        state = S_LANDING;
+    }
+    if (state == S_LANDING)
+    {
+        pid_output_x = pid_x.calc_pid(0, mpu6050->getAngleX()); //
+        pid_output_y = pid_y.calc_pid(0, mpu6050->getAngleY()); //
 
+        motors[0]->setThrottle(base_speed + pid_output_y - pid_output_x); // Front left
+        motors[1]->setThrottle(base_speed + pid_output_y - pid_output_x); // Front right
+        motors[2]->setThrottle(base_speed + pid_output_y + pid_output_x); // Back right
+        motors[3]->setThrottle(base_speed + pid_output_y + pid_output_x); // Back left
 
-    throttle = 1000;
-    motors[0]->setThrottle(throttle + pid_output_y - pid_output_x); // Front left
-    motors[1]->setThrottle(throttle - pid_output_y - pid_output_x); // Front right
-    motors[2]->setThrottle(throttle - pid_output_y + pid_output_x); // Back right
-    motors[3]->setThrottle(throttle + pid_output_y + pid_output_x); // Back left
+        if (bmp180->get_altitude() <= 0.5)
+        {
+            state = S_IDLE;
+            base_speed = 1000;
+        }
+    }*/
+    if (state == S_FLYING)
+    {
+        throttle = map(controller_input.ch2, 1000, 2000, 0, 600);
 
+        desired_roll = map(controller_input.ch0, 1000, 2000, -20, 20);
+        desired_pitch = map(controller_input.ch1, 1000, 2000, -20, 20);
+
+        pid_output_x = pid_x.calc_pid(desired_pitch, mpu6050->getAngleX()); //
+        pid_output_y = pid_y.calc_pid(desired_roll, mpu6050->getAngleY());  //
+
+        motors[0]->setThrottle(base_speed + throttle + pid_output_y - pid_output_x); // Front left
+        motors[1]->setThrottle(base_speed + throttle - pid_output_y - pid_output_x); // Front right
+        motors[2]->setThrottle(base_speed + throttle - pid_output_y + pid_output_x); // Back right
+        motors[3]->setThrottle(base_speed + throttle + pid_output_y + pid_output_x); // Back left
+
+        if (controller_input.ch2 <= 1010 && controller_input.ch1 <= 1010 && bmp180->get_altitude() <= 1)
+        {
+            base_speed = 1000;
+            for (const auto &m : motors)
+            {
+                m->setThrottle(base_speed);
+            }
+            state = S_IDLE;
+        }
+    }
     // logger->stage_msg(
     //     "Motor 0: " + Logger::to_string(motors[0]->getThrottle()) +
     //     " Motor 1: " + Logger::to_string(motors[1]->getThrottle()) +
     //     " Motor 2: " + Logger::to_string(motors[2]->getThrottle()) +
     //     " Motor 3: " + Logger::to_string(motors[3]->getThrottle()));
-
+    logger->stage_msg("State: " + Logger::to_string(state), true, true);
     // logger->push();
 }

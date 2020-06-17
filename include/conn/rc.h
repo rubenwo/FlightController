@@ -5,7 +5,7 @@
 
 struct RC_Input_Values
 {
-    int ch1, ch2, ch3, ch4, ch5, ch6;
+    int ch0, ch1, ch2, ch3;
 };
 
 class RC
@@ -13,7 +13,7 @@ class RC
 private:
     IBusBM IBus;
 
-    RC_Input_Values current_values;
+    RC_Input_Values values;
 
 public:
     RC();

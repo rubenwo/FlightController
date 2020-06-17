@@ -36,4 +36,16 @@ public:
 
         return output;
     }
+
+    void reset_values()
+    {
+        current_time = millis();
+        error = 0;
+        delta_time = 0;
+        previous_time = current_time;
+        accumulation_error = 0;
+        derivative_error = 0;
+        output = 0;
+        previous_error = error;
+    }
 };
