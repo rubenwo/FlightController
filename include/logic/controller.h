@@ -5,7 +5,7 @@
 #include <memory>
 #include <thread>
 #include <string>
-#include <MPU6050_tockn.h>
+// #include <MPU6050_tockn.h>
 
 #include "drivers/motor.h"
 #include "drivers/battery.h"
@@ -15,6 +15,7 @@
 #include "conn/logger.h"
 #include "logic/FSM.h"
 #include "conn/bluetooth.h"
+#include "drivers/imu.h"
 
 enum mode
 {
@@ -50,7 +51,8 @@ class Controller
 {
 private:
     std::array<std::shared_ptr<Motor>, 4> motors;
-    std::unique_ptr<MPU6050> mpu6050;
+    // std::unique_ptr<MPU6050> mpu6050;
+    std::unique_ptr<IMU> imu;
     std::unique_ptr<Battery> battery;
     std::unique_ptr<BMP180> bmp180;
     std::unique_ptr<RC> rc;
@@ -64,8 +66,8 @@ private:
     FSM<states, alphabet, NUM_STATES, NUM_SYMBOLS> fsm;
 
     states state = S_IDLE;
-    float pid_output_x, pid_output_y = 0;
-    int throttle, desired_roll, desired_pitch = 0;
+    float pid_output_x, pid_output_y, pid_output_z = 0;
+    int throttle, desired_roll, desired_pitch, desired_yaw = 0;
     int base_speed = 1000;
 
 public:
