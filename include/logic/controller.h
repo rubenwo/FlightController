@@ -5,17 +5,19 @@
 #include <memory>
 #include <thread>
 #include <string>
-// #include <MPU6050_tockn.h>
 
 #include "drivers/motor.h"
 #include "drivers/battery.h"
 #include "drivers/BMP180.h"
-#include "conn/rc.h"
-#include "logic/pid.h"
-#include "conn/logger.h"
-#include "logic/FSM.h"
-#include "conn/bluetooth.h"
 #include "drivers/imu.h"
+#include "drivers/gps.h"
+
+#include "conn/bluetooth.h"
+#include "conn/rc.h"
+#include "conn/logger.h"
+
+#include "logic/pid.h"
+#include "logic/FSM.h"
 
 enum mode
 {
@@ -50,8 +52,9 @@ struct controller_config
 class Controller
 {
 private:
+    TaskHandle_t bt_task_handle;
+
     std::array<std::shared_ptr<Motor>, 4> motors;
-    // std::unique_ptr<MPU6050> mpu6050;
     std::unique_ptr<IMU> imu;
     std::unique_ptr<Battery> battery;
     std::unique_ptr<BMP180> bmp180;

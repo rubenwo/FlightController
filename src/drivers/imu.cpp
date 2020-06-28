@@ -12,11 +12,13 @@ IMU::IMU(const uint interrupt_pin) : interrupt_pin(interrupt_pin)
 
   devStatus = mpu.dmpInitialize();
   // supply your own gyro offsets here, scaled for min sensitivity
-  mpu.setXGyroOffset(220);
-  mpu.setYGyroOffset(76);
-  mpu.setZGyroOffset(-85);
-  mpu.setZAccelOffset(1788); // 1688 factory default for my test chip
-
+  mpu.setXGyroOffset(51);
+  mpu.setYGyroOffset(22);
+  mpu.setZGyroOffset(-23);
+  mpu.setZAccelOffset(1830); // 1688 factory default for my test chip
+  mpu.setXAccelOffset(274);
+  mpu.setYAccelOffset(63);
+  
   if (devStatus == 0)
   {
     mpu.CalibrateAccel(6);

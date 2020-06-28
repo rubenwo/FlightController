@@ -1,6 +1,6 @@
 #include "logic/controller.h"
 
-Controller::Controller(controller_config cfg) : pid_x(PID(2, 0, 0)), pid_y(PID(2, 0, 0)), pid_z(PID(1, 0, 0))
+Controller::Controller(controller_config cfg) : pid_x(PID(2, 0, 1)), pid_y(PID(2, 0, 1)), pid_z(PID(1, 0, 0))
 {
     pinMode(2, OUTPUT);
     Serial.begin(460800);
@@ -15,6 +15,16 @@ Controller::Controller(controller_config cfg) : pid_x(PID(2, 0, 0)), pid_y(PID(2
 
 Controller::~Controller()
 {
+}
+
+void bt_task(void *args)
+{
+    auto bt = static_cast<BT_Conn *>(args);
+    bt->init();
+    for (;;)
+    {
+        vTaskDelay(25);
+    }
 }
 void Controller::init()
 {
@@ -59,7 +69,14 @@ void Controller::init()
     logger->stage_msg("Battery monitor is running", true, true);
 
     // logger->stage_msg("Starting BLE service...", true, true);
-    // bt->init();
+    // xTaskCreatePinnedToCore(
+    //     NULL,
+    //     "bt_task",
+    //     1024 * 32,
+    //     static_cast<void *>(&bt),
+    //     0,
+    //     &bt_task_handle,
+    //     0);
     // logger->stage_msg("BLE service is running", true, true);
 
     digitalWrite(2, LOW);
@@ -108,11 +125,11 @@ void Controller::loop()
             state = S_IDLE;
         }
     }
-    logger->stage_msg(
-        "Motor 0: " + Logger::to_string(motors[0]->getThrottle()) +
-        " Motor 1: " + Logger::to_string(motors[1]->getThrottle()) +
-        " Motor 2: " + Logger::to_string(motors[2]->getThrottle()) +
-        " Motor 3: " + Logger::to_string(motors[3]->getThrottle()));
-    //logger->stage_msg("State: " + Logger::to_string(state), true, true);
-    logger->push();
+    // logger->stage_msg(
+    //     "Motor 0: " + Logger::to_string(motors[0]->getThrottle()) +
+    //     " Motor 1: " + Logger::to_string(motors[1]->getThrottle()) +
+    //     " Motor 2: " + Logger::to_string(motors[2]->getThrottle()) +
+    //     " Motor 3: " + Logger::to_string(motors[3]->getThrottle()));
+    // //logger->stage_msg("State: " + Logger::to_string(state), true, true);
+    // logger->push();
 }
