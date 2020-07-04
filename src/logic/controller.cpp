@@ -85,17 +85,34 @@ void Controller::init()
 void Controller::loop()
 {
     imu->update();
-    //logger->stage_msg("Pitch: " + Logger::to_string(imu->getPitch()) + " Roll: " + Logger::to_string(imu->getRoll()) + " Yaw: " + Logger::to_string(imu->getYaw()), true, true);
-    auto controller_input = rc->get_input();
+    controller_input = rc->get_input();
 
-    // Transition to S_FLYING state.
-    if (controller_input.ch3 <= 1010 && controller_input.ch0 >= 1990 && state == S_IDLE)
+    // Transition to S_TAKE_OFF state.
+    if (controller_input.ch0 <= 1010 && controller_input.ch3 >= 1990 && state == S_IDLE)
+    {
+        take_off_timeout = millis();
+        base_speed = 1100; // Set base_speed to 1100 to keep motors rotating while the drone is in flying state.
+        state = S_TAKE_OFF;
+    }
+
+    // Transition to S_FLYING state from S_TAKE_OFF state when throttle lever is >= 20%
+    if (state == S_TAKE_OFF && controller_input.ch2 >= 1200)
     {
         pid_x.reset_values();
         pid_y.reset_values();
         pid_z.reset_values();
-        base_speed = 1100; // Set base_speed to 1100 to keep motors rotating while the drone is in flying state.
         state = S_FLYING;
+    }
+
+    // Transition back to S_IDLE if the throttle hasn't been above 20% in the S_TAKE_OFF state.
+    if (state == S_TAKE_OFF && controller_input.ch2 <= 1200 && millis() - take_off_timer >= take_off_timeout)
+    {
+        base_speed = 1000;
+        for (const auto &m : motors)
+        {
+            m->setThrottle(base_speed);
+        }
+        state = S_IDLE;
     }
 
     if (state == S_FLYING)

@@ -28,6 +28,7 @@ enum mode
 enum states
 {
     S_IDLE,
+    S_TAKE_OFF,
     S_FLYING,
     S_LANDING,
     S_ERROR,
@@ -65,13 +66,14 @@ private:
     PID pid_x;
     PID pid_y;
     PID pid_z;
-
-    FSM<states, alphabet, NUM_STATES, NUM_SYMBOLS> fsm;
+    RC_Input_Values controller_input;
 
     states state = S_IDLE;
     float pid_output_x, pid_output_y, pid_output_z = 0;
     int throttle, desired_roll, desired_pitch, desired_yaw = 0;
     int base_speed = 1000;
+
+    long take_off_timeout = 4000, take_off_timer = 0;
 
 public:
     Controller(controller_config cfg);
