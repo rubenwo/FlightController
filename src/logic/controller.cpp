@@ -115,6 +115,7 @@ void Controller::loop()
         state = S_IDLE;
     }
 
+    // Transition to S_FLYING state. This state uses the PID controllers with Angles.
     if (state == S_FLYING)
     {
         throttle = map(controller_input.ch2, 1000, 2000, 0, 600);
